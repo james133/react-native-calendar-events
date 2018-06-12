@@ -473,7 +473,7 @@ RCT_EXPORT_MODULE()
     if (event.calendar) {
         [formedCalendarEvent setValue:@{
                                         @"id": event.calendar.calendarIdentifier,
-                                        @"title": event.calendar.title,
+                                        @"title": event.calendar.title ? event.calendar.title : @"",
                                         @"source": event.calendar.source.title,
                                         @"allowsModifications": @(event.calendar.allowsContentModifications),
                                         @"allowedAvailabilities": [self calendarSupportedAvailabilitiesFromMask:event.calendar.supportedEventAvailabilities],
