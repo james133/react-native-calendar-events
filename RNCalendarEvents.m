@@ -446,6 +446,7 @@ RCT_EXPORT_MODULE()
                                          _notes: @"",
                                          _url: @"",
                                          _alarms: [NSArray array],
+                                         _attendees: [NSArray array],
                                          _recurrence: @"",
                                          _recurrenceRule: @{
                                                  @"frequency": @"",
@@ -472,7 +473,7 @@ RCT_EXPORT_MODULE()
     if (event.calendar) {
         [formedCalendarEvent setValue:@{
                                         @"id": event.calendar.calendarIdentifier,
-                                        @"title": event.calendar.title,
+                                        @"title": event.calendar.title ? event.calendar.title : @"",
                                         @"source": event.calendar.source.title,
                                         @"allowsModifications": @(event.calendar.allowsContentModifications),
                                         @"allowedAvailabilities": [self calendarSupportedAvailabilitiesFromMask:event.calendar.supportedEventAvailabilities],
@@ -496,6 +497,46 @@ RCT_EXPORT_MODULE()
         [formedCalendarEvent setValue:event.location forKey:_location];
     }
 
+    if (event.attendees) {
+        NSMutableArray *attendees = [[NSMutableArray alloc] init];
+        for (EKParticipant *attendee in event.attendees) {
+            
+            NSMutableDictionary *descriptionData = [NSMutableDictionary dictionary];
+            for (NSString *pairString in [attendee.description componentsSeparatedByString:@";"])
+            {
+                NSArray *pair = [pairString componentsSeparatedByString:@"="];
+                if ( [pair count] != 2)
+                    continue;
+                [descriptionData setObject:[[pair objectAtIndex:1] stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]] forKey:[[pair objectAtIndex:0]stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]]];
+            }
+            
+            NSMutableDictionary *formattedAttendee = [[NSMutableDictionary alloc] init];
+            NSString *name = [descriptionData valueForKey:@"name"];
+            NSString *email = [descriptionData valueForKey:@"email"];
+            NSString *phone = [descriptionData valueForKey:@"phone"];
+            
+            if(email && ![email isEqualToString:@"(null)"]) {
+                [formattedAttendee setValue:email forKey:@"email"];
+            }
+            else {
+                [formattedAttendee setValue:@"" forKey:@"email"];
+            }
+            if(phone && ![phone isEqualToString:@"(null)"]) {
+                [formattedAttendee setValue:phone forKey:@"phone"];
+            }
+            else {
+                [formattedAttendee setValue:@"" forKey:@"phone"];
+            }
+            if(name && ![name isEqualToString:@"(null)"]) {
+                [formattedAttendee setValue:name forKey:@"name"];
+            }
+            else {
+                [formattedAttendee setValue:@"" forKey:@"name"];
+            }
+            [attendees addObject:formattedAttendee];
+        }
+        [formedCalendarEvent setValue:attendees forKey:_attendees];
+    }
     if (event.hasAlarms) {
         NSMutableArray *alarms = [[NSMutableArray alloc] init];
 
@@ -630,7 +671,7 @@ RCT_EXPORT_METHOD(findCalendars:(RCTPromiseResolveBlock)resolve rejecter:(RCTPro
         for (EKCalendar *calendar in calendars) {
             [eventCalendars addObject:@{
                                         @"id": calendar.calendarIdentifier,
-                                        @"title": calendar.title,
+                                        @"title": calendar.title ? calendar.title : @"",
                                         @"allowsModifications": @(calendar.allowsContentModifications),
                                         @"source": calendar.source.title,
                                         @"allowedAvailabilities": [self calendarSupportedAvailabilitiesFromMask:calendar.supportedEventAvailabilities]
